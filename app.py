@@ -215,68 +215,70 @@ evaluation_tasks = [
     },
     # Miscellaneous
     {
+        "task": "Follows the company's code of conduct",
+        "description": "Adhere to all company policies and procedures to maintain professionalism."
+    },
+    {
+        "task": "Respects the privacy of clients and coworkers",
+        "description": "Maintain confidentiality regarding all client and coworker information."
+    },
+    {
+        "task": "Demonstrates punctuality and reliability",
+        "description": "Arrive on time and be dependable to ensure smooth operations."
+    },
+    {
         "task": "Maintains a positive attitude towards work",
-        "description": "Exhibit a positive attitude to promote a constructive work environment."
+        "description": "Keep a positive demeanor while performing duties to contribute to a healthy workplace."
     },
     {
-        "task": "Demonstrates reliability and punctuality",
-        "description": "Be punctual and reliable to build trust within the team and with management."
-    },
-    {
-        "task": "Contributes to a culture of safety and respect",
-        "description": "Actively contribute to a respectful and safe workplace environment for all."
+        "task": "Embraces feedback as a tool for improvement",
+        "description": "Accept feedback graciously and use it as an opportunity to grow and enhance performance."
     },
 ]
 
-# Set up Streamlit app layout
-st.title("Employee Cleaning Task Evaluation")
+def create_employee_evaluation_df(employee_name, evaluation_date):
+    """Create a DataFrame to hold employee evaluation data."""
+    return pd.DataFrame({
+        "Task": [task["task"] for task in evaluation_tasks],
+        "Description": [task["description"] for task in evaluation_tasks],
+        "Completed": [False] * len(evaluation_tasks),
+        "Evaluator": [None] * len(evaluation_tasks),
+        "Comments": [None] * len(evaluation_tasks),
+    })
 
-# Input section for employee details
-st.subheader("Employee Details")
-employee_name = st.text_input("Employee Name")
-evaluation_date = st.date_input("Evaluation Date", datetime.date.today())
+def main():
+    st.title("Employee Cleaning Task Evaluation")
 
-# Create a DataFrame to hold evaluation results
-evaluation_results = pd.DataFrame(columns=["Task", "Description", "Rating", "Comments"])
+    # Input employee name and evaluation date
+    employee_name = st.text_input("Employee Name", "")
+    evaluation_date = st.date_input("Evaluation Date", datetime.date.today())
 
-# Create an evaluation section for each task
-for task in evaluation_tasks:
-    col1, col2, col3, col4 = st.columns([2, 4, 2, 4])
-    with col1:
-        st.write(task["task"])
-    with col2:
-        st.write(task["description"])
-    with col3:
-        rating = st.selectbox("Rating (1-5)", options=[1, 2, 3, 4, 5], key=task["task"])
-    with col4:
-        comments = st.text_area("Comments", key=f"{task['task']}_comments", height=50)
-
-    # Append results to the DataFrame
-    evaluation_results = evaluation_results.append({
-        "Task": task["task"],
-        "Description": task["description"],
-        "Rating": rating,
-        "Comments": comments
-    }, ignore_index=True)
-
-# Button to submit evaluation results
-if st.button("Submit Evaluation"):
     if employee_name:
-        st.success("Evaluation submitted successfully!")
-        # Save the results to a CSV file
-        evaluation_results.to_csv(f"{employee_name}_evaluation_{evaluation_date}.csv", index=False)
-        st.write("Download your evaluation results:")
-        st.download_button(
-            label="Download Evaluation Results",
-            data=evaluation_results.to_csv(index=False).encode('utf-8'),
-            file_name=f"{employee_name}_evaluation_{evaluation_date}.csv",
-            mime='text/csv'
-        )
-    else:
-        st.warning("Please enter the employee's name before submitting.")
+        df = create_employee_evaluation_df(employee_name, evaluation_date)
+        
+        # Display the tasks for evaluation
+        st.write(f"### Evaluation Tasks for {employee_name} on {evaluation_date}")
+        st.dataframe(df)
 
-# Option to display evaluation results
-if st.button("Show Evaluation Results"):
-    st.subheader("Evaluation Results")
-    st.dataframe(evaluation_results)
+        # Task completion section
+        st.write("### Task Completion")
+        for index, row in df.iterrows():
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                completed = st.checkbox(f"Complete {row['task']}", value=row['Completed'], key=f"completed_{index}")
+            with col2:
+                evaluator = st.text_input(f"Evaluator for {row['task']}", key=f"evaluator_{index}")
+                comments = st.text_area(f"Comments for {row['task']}", value=row['Comments'], key=f"comments_{index}")
 
+            if completed:
+                df.at[index, 'Completed'] = True
+                df.at[index, 'Evaluator'] = evaluator
+                df.at[index, 'Comments'] = comments
+
+        # Save button
+        if st.button("Save Evaluation"):
+            st.success("Evaluation saved successfully!")
+            st.write(df)
+
+if __name__ == "__main__":
+    main()
