@@ -211,74 +211,46 @@ evaluation_tasks = [
     },
     {
         "task": "Provides suggestions for improving cleaning processes",
-        "description": "Offer suggestions for enhancing current cleaning processes to improve efficiency."
-    },
-    # Miscellaneous
-    {
-        "task": "Follows the company's code of conduct",
-        "description": "Adhere to all company policies and procedures to maintain professionalism."
-    },
-    {
-        "task": "Respects the privacy of clients and coworkers",
-        "description": "Maintain confidentiality regarding all client and coworker information."
-    },
-    {
-        "task": "Demonstrates punctuality and reliability",
-        "description": "Arrive on time and be dependable to ensure smooth operations."
-    },
-    {
-        "task": "Maintains a positive attitude towards work",
-        "description": "Keep a positive demeanor while performing duties to contribute to a healthy workplace."
-    },
-    {
-        "task": "Embraces feedback as a tool for improvement",
-        "description": "Accept feedback graciously and use it as an opportunity to grow and enhance performance."
+        "description": "Offer suggestions for better cleaning processes to enhance efficiency and effectiveness."
     },
 ]
 
-def create_employee_evaluation_df(employee_name, evaluation_date):
-    """Create a DataFrame to hold employee evaluation data."""
-    return pd.DataFrame({
-        "Task": [task["task"] for task in evaluation_tasks],
-        "Description": [task["description"] for task in evaluation_tasks],
-        "Completed": [False] * len(evaluation_tasks),
-        "Evaluator": [None] * len(evaluation_tasks),
-        "Comments": [None] * len(evaluation_tasks),
-    })
+# Initialize or load employee evaluations
+if 'employee_evaluations' not in st.session_state:
+    st.session_state['employee_evaluations'] = []
 
-def main():
-    st.title("Employee Cleaning Task Evaluation")
+# Define function to add an evaluation
+def add_evaluation(employee_name, evaluation_date, task, comment, evaluator):
+    evaluation = {
+        "Employee Name": employee_name,
+        "Evaluation Date": evaluation_date,
+        "Task": task,
+        "Comment": comment,
+        "Evaluator": evaluator
+    }
+    st.session_state['employee_evaluations'].append(evaluation)
 
-    # Input employee name and evaluation date
-    employee_name = st.text_input("Employee Name", "")
-    evaluation_date = st.date_input("Evaluation Date", datetime.date.today())
+# Set the title of the app
+st.title("Employee Cleaning Task Evaluation")
 
-    if employee_name:
-        df = create_employee_evaluation_df(employee_name, evaluation_date)
-        
-        # Display the tasks for evaluation
-        st.write(f"### Evaluation Tasks for {employee_name} on {evaluation_date}")
-        st.dataframe(df)
+# Input section for evaluation
+st.subheader("Add Evaluation")
+employee_name = st.text_input("Employee Name")
+evaluation_date = st.date_input("Evaluation Date", datetime.date.today())
+selected_task = st.selectbox("Select Task", [task['task'] for task in evaluation_tasks])
+task_description = next(task['description'] for task in evaluation_tasks if task['task'] == selected_task)
+st.write("Description:", task_description)
+comment = st.text_area("Comment")
+evaluator = st.text_input("Evaluator's Name")
 
-        # Task completion section
-        st.write("### Task Completion")
-        for index, row in df.iterrows():
-            col1, col2 = st.columns([1, 4])
-            with col1:
-                completed = st.checkbox(f"Complete {row['task']}", value=row['Completed'], key=f"completed_{index}")
-            with col2:
-                evaluator = st.text_input(f"Evaluator for {row['task']}", key=f"evaluator_{index}")
-                comments = st.text_area(f"Comments for {row['task']}", value=row['Comments'], key=f"comments_{index}")
+if st.button("Add Evaluation"):
+    add_evaluation(employee_name, evaluation_date, selected_task, comment, evaluator)
+    st.success("Evaluation added successfully!")
 
-            if completed:
-                df.at[index, 'Completed'] = True
-                df.at[index, 'Evaluator'] = evaluator
-                df.at[index, 'Comments'] = comments
-
-        # Save button
-        if st.button("Save Evaluation"):
-            st.success("Evaluation saved successfully!")
-            st.write(df)
-
-if __name__ == "__main__":
-    main()
+# Display evaluations in a table
+st.subheader("Evaluations")
+if st.session_state['employee_evaluations']:
+    evaluations_df = pd.DataFrame(st.session_state['employee_evaluations'])
+    st.dataframe(evaluations_df)
+else:
+    st.write("No evaluations added yet.")
